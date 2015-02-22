@@ -2,9 +2,10 @@
 /*
 Plugin Name: Memcached Redux
 Description: The real Memcached (not Memcache) backend for the WP Object Cache.
-Version: 0.1.3
-Plugin URI: http://wordpress.org/extend/plugins/memcached/
+Version: 0.1.4
+Plugin URI: http://github.com/mgmartel/memcached-redux
 Author: Scott Taylor - uses code from Ryan Boren, Denis de Bernardy, Matt Martz, Mike Schroder
+Modifications: Mike Martel
 
 Install this file to wp-content/object-cache.php
 */
@@ -59,10 +60,10 @@ function wp_cache_get( $key, $group = '' ) {
 
 /**
  * $keys_and_groups = array(
- *      array( 'key', 'group' ),
- *      array( 'key', '' ),
- *      array( 'key', 'group' ),
- *      array( 'key' )
+ *	  array( 'key', 'group' ),
+ *	  array( 'key', '' ),
+ *	  array( 'key', 'group' ),
+ *	  array( 'key' )
  * );
  *
  */
@@ -74,8 +75,8 @@ function wp_cache_get_multi( $key_and_groups, $bucket = 'default' ) {
 
 /**
  * $items = array(
- *      array( 'key', 'data', 'group' ),
- *      array( 'key', 'data' )
+ *	  array( 'key', 'data', 'group' ),
+ *	  array( 'key', 'data' )
  * );
  *
  */
@@ -145,7 +146,7 @@ class WP_Object_Cache {
 		}
 
 		$mc =& $this->get_mc( $group );
-		$expire = ( $expire == 0) ? $this->default_expiration : $expire;
+		$expire = ( $expire == 0) ? $this->default_expiration : $expire + time();
 		$result = $mc->add( $key, $data, $expire );
 
 		if ( false !== $result ) {
@@ -330,7 +331,8 @@ class WP_Object_Cache {
 		if ( in_array( $group, $this->no_mc_groups ) )
 			return true;
 
-		$expire = ( $expire == 0 ) ? $this->default_expiration : $expire;
+		$expire = ( $expire == 0 ) ? $this->default_expiration : $expire + time();
+
 		$mc =& $this->get_mc( $group );
 		$result = $mc->set( $key, $data, $expire );
 
@@ -340,7 +342,7 @@ class WP_Object_Cache {
 	function set_multi( $items, $expire = 0, $group = 'default' ) {
 		$sets = array();
 		$mc =& $this->get_mc( $group );
-		$expire = ( $expire == 0 ) ? $this->default_expiration : $expire;
+		$expire = ( $expire == 0 ) ? $this->default_expiration : $expire + time();
 
 		foreach ( $items as $i => $item ) {
 			if ( empty( $item[2] ) )
@@ -454,6 +456,10 @@ class WP_Object_Cache {
 
 		$this->cache_hits =& $this->stats['get'];
 		$this->cache_misses =& $this->stats['add'];
+
+		// If default expiration is not forever (0), then convert into timestamp
+		if ( $this->default_expiration !== 0 )
+			$this->default_expiration += time();
 	}
 }
 else: // No Memcached
